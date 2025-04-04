@@ -3,14 +3,16 @@ use crate::err::ChunkReadError;
 
 use serde_derive::{Deserialize, Serialize};
 
-use core::fmt::{Formatter, Display, Result as FmtResult};
+use core::fmt::{Formatter, Display, Result as FmtResult, Debug};
+use std::vec::{IntoIter as VecIter, Vec};
 use core::convert::{AsRef, From, Into};
 use std::collections::HashMap;
+use core::iter::IntoIterator;
 use core::default::Default;
 use core::borrow::Borrow;
+use core::cmp::PartialEq;
 use core::mem::transmute;
 use core::ops::Deref;
-use std::vec::Vec;
 
 
 
@@ -52,36 +54,63 @@ pub enum Block {
 	Grass,
 	/// Dirt – a generic block of soil which can be found under Grass.
 	Dirt,
+	/// Stone – a generic block of (cobbled) stone which can be found under Dirt.
 	Stone,
+	/// Wood – a generic block to be used as a tree-trunk in non-Midnight biomes.
 	Wood,
+	///
 	Leaf,
+	/// Lava – a (purely decorative) placeholder block found at the bottom of the world.
 	Lava,
+	///
 	IronOre,
+	/// Deadly Ore – a glowing ore which produces the most valuable resource, Deadly Bars.
 	DeadlyOre,
 	/// Chest – a block that can store items.
 	Chest,
-	/// Midnight Grass – the Midnight biome's version of Grass.
+	/// Midnight Grass – the Midnight biome's variant of [`Block::Grass`].
 	MidnightGrass,
+	///
 	MidnightSoil,
+	///
 	MidnightStone,
+	///
 	MidnightWood,
+	///
 	MidnightLeaf,
+	///
 	Bush,
+	///
 	MidnightBush,
+	/// A generic red flower.
 	RedFlower,
+	/// A generic white flower.
 	WhiteFlower,
+	/// A generic blue flower.
 	BlueFlower,
+	///
 	TallGrass,
+	/// Sand – a generic block of sand, used as the floor for the Desert biome.
 	Sand,
+	/// Sandstone – a generic block of (cobbled) sandstone which can be found under Sand.
 	Sandstone,
+	///
 	Cactus,
+	///
 	Snow,
+	///
 	Ice,
+	/// Snowy Bush – the Snow biome's variant of [`Block::Bush`].
 	SnowyBush,
+	/// Glass – a generic, see-through, block of glass crafted from Sand and Wood.
 	Glass,
+	///
 	SolenoidOre,
+	///
 	SnowyLeaf,
+	/// Pumpkin – a naturally, but infrequently, occurring block in grasslands.
 	Pumpkin,
+	///
 	JackOLantern,
 	/// Barrier – a special block which, presumably, represents an impassible block
 	Barrier,
@@ -136,6 +165,10 @@ impl Collectable for Block {
 	#[inline(always)] fn typ(&self)  -> CollectableType { CollectableType::Block }
 }
 
+impl PartialEq<u8> for Block {
+	fn eq(&self, other:&u8) -> bool { *self as u8 == *other }
+}
+
 impl Default for Block {
 	#[inline(always)] fn default() -> Self { Self::Air }
 }
@@ -151,7 +184,7 @@ impl Into<u8> for Block {
 
 
 /// Represents a 8*128*8*8 chunk of the world.
-#[derive(PartialEq, Default, Clone, Debug, Hash, Eq)]
+#[derive(PartialEq, Default, Clone, Hash, Eq)]
 #[repr(transparent)]
 pub struct Chunk(Vec<BlockGroup>);
 
@@ -235,11 +268,25 @@ impl Chunk {
 	pub fn bytes(&self) -> &[u8] { unsafe { transmute(self.0.as_slice()) } }
 }
 
-impl Display for Chunk {
-	fn fmt(&self, f:&mut Formatter) -> FmtResult {
-		for group in &self.0 { _ = group.fmt(f); }
-		Ok(())
-	}
+impl IntoIterator for Chunk {
+	type IntoIter = VecIter<BlockGroup>;
+	type Item     = BlockGroup;
+	
+	fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
+}
+
+impl<'a> IntoIterator for &'a Chunk {
+	type IntoIter = ::core::slice::Iter<'a, BlockGroup>;
+	type Item     = &'a BlockGroup;
+	
+	fn into_iter(self) -> Self::IntoIter { (&self.0).into_iter() }
+}
+
+impl<'a> IntoIterator for &'a mut Chunk {
+	type IntoIter = ::core::slice::IterMut<'a, BlockGroup>;
+	type Item     = &'a mut BlockGroup;
+	
+	fn into_iter(self) -> Self::IntoIter { (&mut self.0).into_iter() }
 }
 
 impl Borrow<Vec<BlockGroup>> for Chunk {
@@ -258,6 +305,13 @@ impl AsRef<[BlockGroup]> for Chunk {
 	fn as_ref(&self) -> &[BlockGroup] { &self.0 }
 }
 
+impl Debug for Chunk {
+	fn fmt(&self, f:&mut Formatter) -> FmtResult {
+		for group in &self.0 { _ = <BlockGroup as Display>::fmt(group, f); }
+		Ok(())
+	}
+}
+
 impl Deref for Chunk {
 	type Target = [BlockGroup];
 	
@@ -266,6 +320,7 @@ impl Deref for Chunk {
 
 
 
+/// A world.
 #[derive(PartialEq, Clone, Debug, Eq)]
 #[repr(transparent)]
 pub struct World(HashMap<(i64, i64, i64), Chunk>);
@@ -273,4 +328,12 @@ pub struct World(HashMap<(i64, i64, i64), Chunk>);
 impl World {
 	/// The size of the (whole) world along the Y axis.
 	pub const HEIGHT:usize = 128;
+}
+
+
+
+
+
+impl PartialEq<Block> for u8 {
+	fn eq(&self, other:&Block) -> bool { *self == *other as u8 }
 }
