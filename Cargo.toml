@@ -1,8 +1,11 @@
 [package]
-edition = "2024"
-license = "MIT"
-version = "0.0.3"
-name    = "fdm-toolkit"
+description = "fdm-toolkit is a crate for reading and writing 4D Miner (0.2.1.4 Alpha) game-data."
+categories  = ["data-structures", "encoding", "game-development", "config"]
+keywords    = ["4DMiner", "gaming", "FDM", "modding"]
+edition     = "2024"
+license     = "MIT"
+version     = "0.0.4"
+name        = "fdm-toolkit"
 
 [dependencies]
 serde_derive = "^1.0"

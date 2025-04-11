@@ -1,2 +1,6 @@
+.gitignore
+test_reexported_chunk.bin
+test_out_chunk.bin
+test_in_chunk.bin
 .access-token
 /target
